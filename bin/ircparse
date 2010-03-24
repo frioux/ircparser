@@ -22,7 +22,11 @@ open my $fh, '<', $filename;
 
 my $current_day = "";
 my $log_item = {};
-my @datas;
+my $mode_id = 1;
+my $user_id = 1;
+my @messages;
+my %modes;
+my %users;
 while (<$fh>) {
    chomp $_;
    given ($_) {
@@ -31,19 +35,41 @@ while (<$fh>) {
       when (/^--- Day changed \w{3} (.*)$/)              { $current_day = $1 }
       when (/^(\d{2}:\d{2}) ==> .*$/)              {}
       when (/^(\d{2}:\d{2}) (?:|<|>>)([ @+%]?)([\w|`\[\]\\\-]+)(?:|>|<<) (.*)$/) {
-         push @datas, {
+         $modes{$2} //= {
+            code => $2,
+            name => $2,
+            id   => $mode_id++,
+         };
+
+         $users{$3} //= {
+            handle => $3,
+            id     => $user_id++,
+         };
+
+         push @messages, {
             when_said  => "$current_day $1",
-            mode       => { code   => $2, name => $2 },
-            user       => { handle => $3 },
+            mode_id    => $modes{$2}->{id},
+            user_id    => $users{$3}->{id},
             value      => $4,
             channel_id => $channel->id,
          };
       }
       when (/^(\d{2}:\d{2})  >>> ([\w\\|`\[\]\-]+) (.*)$/) {
-         push @datas, {
+         $modes{' '} //= {
+            code => ' ',
+            name => ' ',
+            id   => $mode_id++,
+         };
+
+         $users{$2} //= {
+            handle => $2,
+            id     => $user_id++,
+         };
+
+         push @messages, {
             when_said  => "$current_day $1",
-            mode       => { code   => ' ', name => ' ' },
-            user       => { handle => $2 },
+            mode_id    => $modes{' '}->{id},
+            user_id    => $users{$2}->{id},
             value      => $3,
             channel_id => $channel->id,
          };
@@ -54,7 +80,9 @@ while (<$fh>) {
 
 close $fh;
 warn 'done parsing';
-$schema->resultset('Message')->populate([@datas]);
+$schema->resultset('Mode')->populate([values %modes]);
+$schema->resultset('User')->populate([values %users]);
+$schema->resultset('Message')->populate([@messages]);
 
 # later, for when I do multiline logs
 sub flush_log_item {

@@ -1,0 +1,21 @@
+#!perl
+use strict;
+use warnings;
+
+use feature ':5.10';
+
+use Devel::Dwarn;
+use IRC::Schema;
+
+my $schema = IRC::Schema->connect('dbi:SQLite:dbname=irclogdb');
+
+Dwarn [$schema->resultset('Message')
+	->search(undef, {
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			rows => 50,
+			order_by => { -desc => 'me.id' },
+			prefetch => [qw( user channel mode )],
+		})
+	->all
+];
+

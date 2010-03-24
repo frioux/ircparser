@@ -1,0 +1,64 @@
+#!perl
+use strict;
+use warnings;
+
+use feature ':5.10';
+
+use Devel::Dwarn;
+use IRC::Schema;
+
+my $schema = IRC::Schema->connect('dbi:SQLite:dbname=irclogdb');
+$schema->deploy() if $ENV{IRC_DEPLOY};
+
+my $filename = shift;
+my $channel  = $schema->resultset('Channel')->find_or_create({
+   name => shift || die ('no channel name'),
+   network => {
+      name => shift || die ('no network name'),
+   }
+});
+
+open my $fh, '<', $filename;
+
+my $current_day = "";
+my $log_item = {};
+my @datas;
+while (<$fh>) {
+   chomp $_;
+   given ($_) {
+      when (/^--- Log opened /) {}
+      when (/^--- Log closed /) {}
+      when (/^--- Day changed \w{3} (.*)$/)              { $current_day = $1 }
+      when (/^(\d{2}:\d{2}) ==> .*$/)              {}
+      when (/^(\d{2}:\d{2}) (|<|>>)([ @+%]?)([^ ]+)(|>|<<) (.*)$/) {
+         push @datas, {
+            when_said  => "$current_day $1",
+            mode       => { code   => $2, name => $2 },
+            user       => { handle => $3 },
+            value      => $4,
+            channel_id => $channel->id,
+         };
+      }
+      when (/^(\d{2}:\d{2})  >>> ([\w|`\[\]]+) (.*)$/) {
+         push @datas, {
+            when_said  => "$current_day $1",
+            mode       => { code   => ' ', name => ' ' },
+            user       => { handle => $2 },
+            value      => $3,
+            channel_id => $channel->id,
+         };
+      }
+      default { warn "<<$_>> not parsable" }
+   }
+}
+
+close $fh;
+warn 'done parsing';
+$schema->resultset('Message')->populate([@datas]);
+
+# later, for when I do multiline logs
+sub flush_log_item {
+   my $i = shift;
+
+   say "flushing $i";
+}

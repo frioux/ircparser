@@ -30,7 +30,7 @@ while (<$fh>) {
       when (/^--- Log closed /) {}
       when (/^--- Day changed \w{3} (.*)$/)              { $current_day = $1 }
       when (/^(\d{2}:\d{2}) ==> .*$/)              {}
-      when (/^(\d{2}:\d{2}) (|<|>>)([ @+%]?)([^ ]+)(|>|<<) (.*)$/) {
+      when (/^(\d{2}:\d{2}) (?:|<|>>)([ @+%]?)([\w|`\[\]\\\-]+)(?:|>|<<) (.*)$/) {
          push @datas, {
             when_said  => "$current_day $1",
             mode       => { code   => $2, name => $2 },
@@ -39,7 +39,7 @@ while (<$fh>) {
             channel_id => $channel->id,
          };
       }
-      when (/^(\d{2}:\d{2})  >>> ([\w|`\[\]]+) (.*)$/) {
+      when (/^(\d{2}:\d{2})  >>> ([\w\\|`\[\]\-]+) (.*)$/) {
          push @datas, {
             when_said  => "$current_day $1",
             mode       => { code   => ' ', name => ' ' },

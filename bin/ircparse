@@ -10,75 +10,84 @@ use IRC::Schema;
 my $schema = IRC::Schema->connect('dbi:SQLite:dbname=irclogdb');
 $schema->deploy() if $ENV{IRC_DEPLOY};
 
-my $filename = shift;
-my $channel  = $schema->resultset('Channel')->find_or_create({
-   name => shift || die ('no channel name'),
-   network => {
-      name => shift || die ('no network name'),
-   }
-});
+my $dir_name = shift;
+my $network  = shift or die 'no network name';
 
-open my $fh, '<', $filename;
+my $dh;
+opendir $dh, $dir_name;
 
-my $current_day = "";
-my $log_item = {};
 my $mode_id = 1;
 my $user_id = 1;
 my @messages;
 my %modes;
 my %users;
-while (<$fh>) {
-   chomp $_;
-   given ($_) {
-      when (/^--- Log opened /) {}
-      when (/^--- Log closed /) {}
-      when (/^--- Day changed \w{3} (.*)$/)              { $current_day = $1 }
-      when (/^(\d{2}:\d{2}) ==> .*$/)              {}
-      when (/^(\d{2}:\d{2}) (?:|<|>>)([ @+%]?)([\w|`\[\]\\\-]+)(?:|>|<<) (.*)$/) {
-         $modes{$2} //= {
-            code => $2,
-            name => $2,
-            id   => $mode_id++,
-         };
 
-         $users{$3} //= {
-            handle => $3,
-            id     => $user_id++,
-         };
-
-         push @messages, {
-            when_said  => "$current_day $1",
-            mode_id    => $modes{$2}->{id},
-            user_id    => $users{$3}->{id},
-            value      => $4,
-            channel_id => $channel->id,
-         };
+for my $filename (map "$dir_name/$_", grep { /^#(.*)\.log/ } readdir $dh) {
+   $filename =~ /(#.*)\.log/;
+   my $channel = $schema->resultset('Channel')->find_or_create({
+      name => $1,
+      network => {
+         name => $network
       }
-      when (/^(\d{2}:\d{2})  >>> ([\w\\|`\[\]\-]+) (.*)$/) {
-         $modes{' '} //= {
-            code => ' ',
-            name => ' ',
-            id   => $mode_id++,
-         };
+   });
 
-         $users{$2} //= {
-            handle => $2,
-            id     => $user_id++,
-         };
+   open my $fh, '<', $filename;
 
-         push @messages, {
-            when_said  => "$current_day $1",
-            mode_id    => $modes{' '}->{id},
-            user_id    => $users{$2}->{id},
-            value      => $3,
-            channel_id => $channel->id,
-         };
+   my $current_day = "";
+   while (<$fh>) {
+      chomp $_;
+      given ($_) {
+         when (/^--- Log opened /) {}
+         when (/^--- Log closed /) {}
+         when (/^--- Day changed \w{3} (.*)$/)              { $current_day = $1 }
+         when (/^(\d{2}:\d{2}) ==> .*$/)              {}
+         when (/^(\d{2}:\d{2}) (?:|<|>>)([ @+%]?)([\^\w|`\[\]\\\-]+)(?:|>|<<) (.*)$/) {
+            $modes{$2} //= {
+               code => $2,
+               name => $2,
+               id   => $mode_id++,
+            };
+
+            $users{$3} //= {
+               handle => $3,
+               id     => $user_id++,
+            };
+
+            push @messages, {
+               when_said  => "$current_day $1",
+               mode_id    => $modes{$2}->{id},
+               user_id    => $users{$3}->{id},
+               value      => $4,
+               channel_id => $channel->id,
+            };
+         }
+         when (/^(\d{2}:\d{2})  >>> ([\^\w\\|`\[\]\-]+) (.*)$/) {
+            $modes{' '} //= {
+               code => ' ',
+               name => ' ',
+               id   => $mode_id++,
+            };
+
+            $users{$2} //= {
+               handle => $2,
+               id     => $user_id++,
+            };
+
+            push @messages, {
+               when_said  => "$current_day $1",
+               mode_id    => $modes{' '}->{id},
+               user_id    => $users{$2}->{id},
+               value      => $3,
+               channel_id => $channel->id,
+            };
+         }
+         default { warn "<<$_>> not parsable" }
       }
-      default { warn "<<$_>> not parsable" }
    }
-}
 
-close $fh;
+   close $fh;
+}
+closedir $dh;
 warn 'done parsing';
 $schema->resultset('Mode')->populate([values %modes]);
 $schema->resultset('User')->populate([values %users]);

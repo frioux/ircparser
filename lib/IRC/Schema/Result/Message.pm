@@ -1,41 +1,40 @@
 package IRC::Schema::Result::Message;
 
-use strict;
-use warnings;
+use DBIx::Class::Candy -base => 'IRC::Schema::Result';
 
-use parent 'IRC::Schema::Result';
-use CLASS;
+table 'Messages';
 
-CLASS->table('Messages');
+column id => {
+   data_type => 'int',
+   is_auto_increment => 1,
+};
 
-CLASS->add_columns(
-   id => {
-      data_type => 'int',
-      is_auto_increment => 1,
-   },
-   user_id => {
-		data_type => 'int',
-   },
-   mode_id => {
-		data_type => 'int',
-   },
-   channel_id => {
-		data_type => 'int',
-   },
-	value => {
-		data_type => 'varchar',
-		size      => 100,
-	},
-	when_said => {
-		data_type => 'datetime',
-	},
-);
+column user_id => {
+   data_type => 'int',
+};
 
-CLASS->set_primary_key('id');
+column mode_id => {
+   data_type => 'int',
+};
 
-CLASS->belongs_to(user => 'IRC::Schema::Result::User', 'user_id');
-CLASS->belongs_to(mode => 'IRC::Schema::Result::Mode', 'mode_id');
-CLASS->belongs_to(channel => 'IRC::Schema::Result::Channel', 'channel_id');
+column channel_id => {
+   data_type => 'int',
+};
+
+column value => {
+   data_type => 'varchar',
+   size      => 100,
+};
+
+column when_said => {
+   data_type => 'datetime',
+};
+
+primary_key 'id';
+
+belongs_to user => 'IRC::Schema::Result::User', 'user_id';
+belongs_to mode => 'IRC::Schema::Result::Mode', 'mode_id';
+belongs_to channel => 'IRC::Schema::Result::Channel', 'channel_id';
 
 1;
 

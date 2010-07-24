@@ -1,31 +1,27 @@
 package IRC::Schema::Result::Mode;
 
-use strict;
-use warnings;
+use DBIx::Class::Candy -base => 'IRC::Schema::Result';
 
-use parent 'IRC::Schema::Result';
-use CLASS;
+table 'Modes';
 
-CLASS->table('Modes');
+column id => {
+   data_type         => 'int',
+   is_auto_increment => 1,
+};
 
-CLASS->add_columns(
-   id => {
-      data_type         => 'int',
-      is_auto_increment => 1,
-   },
-   name => {
-      data_type => 'varchar',
-      size      => 30,
-   },
-   code => {
-      data_type => 'char',
-      size      => '1',
-   },
-);
+column name => {
+   data_type => 'varchar',
+   size      => 30,
+};
 
-CLASS->set_primary_key('id');
+column code => {
+   data_type => 'char',
+   size      => '1',
+};
 
-CLASS->add_unique_constraint([qw( name )]);
-CLASS->add_unique_constraint([qw( code )]);
+primary_key 'id';
+
+unique_constraint [qw( name )];
+unique_constraint [qw( code )];
 
 1;

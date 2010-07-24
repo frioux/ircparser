@@ -1,26 +1,23 @@
 package IRC::Schema::Result::Network;
 
-use strict;
-use warnings;
+use DBIx::Class::Candy -base => 'IRC::Schema::Result';
 
-use parent 'IRC::Schema::Result';
-use CLASS;
+table 'Networks';
 
-CLASS->table('Networks');
+column id => {
+   data_type => 'int',
+   is_auto_increment => 1,
+};
 
-CLASS->add_columns(
-   id => {
-      data_type => 'int',
-      is_auto_increment => 1,
-   },
-   name => {
-		data_type => 'varchar',
-		size      => 100,
-   },
-);
+column name => {
+   data_type => 'varchar',
+   size      => 100,
+};
 
-CLASS->set_primary_key('id');
 
-CLASS->add_unique_constraint([qw( name )]);
+primary_key('id');
+
+unique_constraint [qw( name )];
+
 1;
 

@@ -1,30 +1,26 @@
 package IRC::Schema::Result::Channel;
 
-use strict;
-use warnings;
+use DBIx::Class::Candy -base => 'IRC::Schema::Result';
 
-use parent 'IRC::Schema::Result';
-use CLASS;
+table 'Channels';
 
-CLASS->table('Channels');
+column id => {
+   data_type => 'int',
+   is_auto_increment => 1,
+};
 
-CLASS->add_columns(
-   id => {
-      data_type => 'int',
-      is_auto_increment => 1,
-   },
-   name => {
-		data_type => 'varchar',
-		size      => 100,
-   },
-   network_id => {
-		data_type => 'int',
-   },
-);
+column name => {
+   data_type => 'varchar',
+   size      => 100,
+};
 
-CLASS->set_primary_key('id');
+column network_id => {
+   data_type => 'int',
+};
 
-CLASS->belongs_to(network => 'IRC::Schema::Result::Network', 'network_id');
-CLASS->add_unique_constraint([qw( name )]);
+primary_key 'id';
+
+belongs_to network => 'IRC::Schema::Result::Network', 'network_id';
+unique_constraint [qw( name )];
 1;
 

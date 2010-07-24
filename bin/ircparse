@@ -81,7 +81,7 @@ for my $filename (map "$dir_name/$_", grep { /^#(.*)\.log/ } readdir $dh) {
                channel_id => $channel->id,
             };
          }
-         default { warn "<<$_>> not parsable" }
+         default { warn "«$_» not parsable" }
       }
    }
 

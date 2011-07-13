@@ -10,12 +10,15 @@ use IRC::Schema;
 my $schema = IRC::Schema->connect('dbi:SQLite:dbname=irclogdb');
 
 Dwarn [$schema->resultset('Message')
-	->search(undef, {
-			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			rows => 50,
-			order_by => { -desc => 'me.id' },
-			prefetch => [qw( user channel mode )],
-		})
-	->all
+   ->search(undef, {
+         result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+         rows => 50,
+         order_by => { -desc => \'COUNT(*)' },
+         group_by => [qw(channel.name)],
+         select => [{ count => '*' }, qw(channel.name)],
+         as => [qw(cnt channel)],
+         join => [qw( channel )],
+      })
+   ->all
 ];
 
